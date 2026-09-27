@@ -3,6 +3,7 @@ import random
 
 import matplotlib.pyplot as plt
 import pandas as pd
+
 from shiny import reactive
 from shiny.express import input, render, session, ui
 
@@ -75,11 +76,6 @@ body {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(31, 78, 121, 0.07);
     margin-bottom: 20px;
-
-    /*
-       Important:
-       Do NOT clip chart, table, form, or other card content.
-    */
     overflow: visible;
 }
 
@@ -88,10 +84,8 @@ body {
     font-size: 1rem;
     padding: 13px 17px;
     min-height: 48px;
-
     display: flex;
     align-items: center;
-
     line-height: 1.3;
 }
 
@@ -140,10 +134,8 @@ body {
 .kpi-card .card-header {
     height: 48px;
     min-height: 48px;
-
     font-size: 0.88rem;
     line-height: 1.2;
-
     display: flex;
     align-items: center;
     justify-content: center;
@@ -152,7 +144,6 @@ body {
 .kpi-card .card-body {
     min-height: 82px;
     padding: 0 !important;
-
     display: flex;
     align-items: center;
     justify-content: center;
@@ -211,9 +202,7 @@ body {
     background: #F0F7F8;
     border: 1px solid #C9E2E5;
     border-radius: 10px;
-
     padding: 18px;
-
     text-align: center;
     margin: 8px 0;
 }
@@ -223,6 +212,34 @@ body {
     color: var(--warm-teal);
     font-size: 1.15rem;
     letter-spacing: .02em;
+    margin-bottom: 8px;
+}
+
+
+/* ==========================================================================
+   TRACKING STATUS
+   ========================================================================== */
+
+.status-pill {
+    display: inline-block;
+    padding: 7px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin: 4px 0;
+}
+
+.track-summary {
+    background: #F0F7F8;
+    border: 1px solid #C9E2E5;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.track-summary-title {
+    color: var(--healthcare-blue);
+    font-weight: 750;
     margin-bottom: 8px;
 }
 
@@ -359,6 +376,7 @@ REGIONS = [
     "Eastern",
 ]
 
+
 DISTRICTS = {
     "Volta": [
         "Wudoaba",
@@ -366,21 +384,25 @@ DISTRICTS = {
         "Keta",
         "Hohoe",
     ],
+
     "Ashanti": [
         "Kumasi Metro",
         "Obuasi",
         "Ejisu",
     ],
+
     "Greater Accra": [
         "Accra Metro",
         "Tema",
         "Ga West",
     ],
+
     "Northern": [
         "Tamale Metro",
         "Yendi",
         "Savelugu",
     ],
+
     "Eastern": [
         "Koforidua",
         "Akropong",
@@ -414,6 +436,57 @@ PATHWAY_STEPS = [
 ]
 
 
+# ============================================================================
+# TRACKING OPTIONS
+# ============================================================================
+
+FOLLOWUP_STATUSES = [
+    "Not started",
+    "Scheduled",
+    "Completed",
+    "Needs follow-up",
+]
+
+
+FEEDING_STATUSES = [
+    "Improved",
+    "Stable",
+    "Needs dietetic review",
+]
+
+
+NUTRITION_STATUSES = [
+    "Improved",
+    "Stable",
+    "Needs nutrition support",
+]
+
+
+SPEECH_STATUSES = [
+    "No concern",
+    "Assessment pending",
+    "Needs speech review",
+]
+
+
+HEARING_STATUSES = [
+    "No concern",
+    "Assessment pending",
+    "Needs hearing review",
+]
+
+
+PSYCHOSOCIAL_STATUSES = [
+    "Support adequate",
+    "Support required",
+    "Referral required",
+]
+
+
+# ============================================================================
+# SAMPLE PATIENT DATA
+# ============================================================================
+
 def generate_sample_data(n=25):
     """Generate a small demonstration dataset."""
 
@@ -430,7 +503,7 @@ def generate_sample_data(n=25):
             region = "Volta"
             district = "Wudoaba"
 
-        # Weight KATH-related cases.
+        # Weight Ashanti/Kumasi cases.
         if random.random() < 0.25:
             region = "Ashanti"
             district = "Kumasi Metro"
@@ -532,7 +605,105 @@ patients = reactive.value(
 
 
 # ============================================================================
-# REACTIVE DATA
+# INITIAL FOLLOW-UP DATA
+# ============================================================================
+
+def generate_tracking_data(patient_df):
+
+    rows = []
+    today = date.today()
+
+    for _, patient in patient_df.iterrows():
+
+        if patient["current_step"] == "TRACK - Follow-up":
+
+            status = random.choice(
+                [
+                    "Scheduled",
+                    "Completed",
+                    "Needs follow-up",
+                ]
+            )
+
+            last_date = (
+                today
+                - timedelta(
+                    days=random.randint(7, 120)
+                )
+            )
+
+            next_date = (
+                today
+                + timedelta(
+                    days=random.randint(7, 90)
+                )
+            )
+
+        else:
+
+            status = "Not started"
+
+            last_date = None
+
+            next_date = (
+                today
+                + timedelta(
+                    days=random.randint(14, 120)
+                )
+            )
+
+        rows.append(
+            {
+                "patient_id": patient["patient_id"],
+
+                "followup_status": status,
+
+                "last_followup": (
+                    last_date.isoformat()
+                    if last_date
+                    else ""
+                ),
+
+                "next_followup": (
+                    next_date.isoformat()
+                    if next_date
+                    else ""
+                ),
+
+                "feeding_status": random.choice(
+                    FEEDING_STATUSES
+                ),
+
+                "nutrition_status": random.choice(
+                    NUTRITION_STATUSES
+                ),
+
+                "speech_status": random.choice(
+                    SPEECH_STATUSES
+                ),
+
+                "hearing_status": random.choice(
+                    HEARING_STATUSES
+                ),
+
+                "psychosocial_status": random.choice(
+                    PSYCHOSOCIAL_STATUSES
+                ),
+
+                "notes": "",
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+tracking_records = reactive.value(
+    generate_tracking_data(initial_patients)
+)
+
+
+# ============================================================================
+# FILTERED PATIENT DATA
 # ============================================================================
 
 @reactive.calc
@@ -561,6 +732,10 @@ def filtered_patients():
 
     return df
 
+
+# ============================================================================
+# REGISTRY SEARCH
+# ============================================================================
 
 @reactive.calc
 def registry_patients():
@@ -667,12 +842,14 @@ def register_patient():
         ).days // 30,
     )
 
+    patient_id = (
+        f"GH-CLP-{patient_number:03d}"
+    )
+
     new_patient = pd.DataFrame(
         [
             {
-                "patient_id": (
-                    f"GH-CLP-{patient_number:03d}"
-                ),
+                "patient_id": patient_id,
 
                 "name": name,
 
@@ -741,7 +918,42 @@ def register_patient():
         )
     )
 
-    # Refresh patient choices.
+    # Add new patient to follow-up registry.
+    tracking_current = (
+        tracking_records().copy()
+    )
+
+    new_tracking = pd.DataFrame(
+        [
+            {
+                "patient_id": patient_id,
+                "followup_status": "Not started",
+                "last_followup": "",
+                "next_followup": (
+                    today
+                    + timedelta(days=30)
+                ).isoformat(),
+                "feeding_status": "Stable",
+                "nutrition_status": "Stable",
+                "speech_status": "Assessment pending",
+                "hearing_status": "Assessment pending",
+                "psychosocial_status": "Support adequate",
+                "notes": "",
+            }
+        ]
+    )
+
+    tracking_records.set(
+        pd.concat(
+            [
+                tracking_current,
+                new_tracking,
+            ],
+            ignore_index=True,
+        )
+    )
+
+    # Refresh patient selectors.
     choices = (
         patients()["patient_id"]
         .tolist()
@@ -773,6 +985,226 @@ def register_patient():
         },
     )
 
+    session.send_input_message(
+        "track_patient",
+        {
+            "options": [
+                {
+                    "value": x,
+                    "label": x,
+                }
+                for x in choices
+            ]
+        },
+    )
+
+
+# ============================================================================
+# SAVE FOLLOW-UP RECORD
+# ============================================================================
+
+@reactive.effect
+@reactive.event(input.save_tracking)
+def save_followup_record():
+
+    patient_id = input.track_patient()
+
+    if not patient_id:
+        return
+
+    current_tracking = (
+        tracking_records().copy()
+    )
+
+    match = (
+        current_tracking["patient_id"]
+        == patient_id
+    )
+
+    if not match.any():
+        return
+
+    # ------------------------------------------------------------
+    # FOLLOW-UP DATE
+    # ------------------------------------------------------------
+
+    followup_date = (
+        input.track_followup_date()
+    )
+
+    if followup_date is not None:
+
+        if isinstance(
+            followup_date,
+            date,
+        ):
+            followup_date_value = (
+                followup_date.isoformat()
+            )
+        else:
+            followup_date_value = str(
+                followup_date
+            )
+
+    else:
+
+        followup_date_value = ""
+
+
+    # ------------------------------------------------------------
+    # NEXT FOLLOW-UP DATE
+    # ------------------------------------------------------------
+
+    next_date = input.track_next_date()
+
+    if next_date is not None:
+
+        if isinstance(
+            next_date,
+            date,
+        ):
+            next_date_value = (
+                next_date.isoformat()
+            )
+        else:
+            next_date_value = str(
+                next_date
+            )
+
+    else:
+
+        next_date_value = ""
+
+
+    # ------------------------------------------------------------
+    # UPDATE FOLLOW-UP RECORD
+    # ------------------------------------------------------------
+
+    current_tracking.loc[
+        match,
+        "followup_status"
+    ] = input.track_status()
+
+    current_tracking.loc[
+        match,
+        "last_followup"
+    ] = followup_date_value
+
+    current_tracking.loc[
+        match,
+        "next_followup"
+    ] = next_date_value
+
+    current_tracking.loc[
+        match,
+        "feeding_status"
+    ] = input.track_feeding_status()
+
+    current_tracking.loc[
+        match,
+        "nutrition_status"
+    ] = input.track_nutrition_status()
+
+    current_tracking.loc[
+        match,
+        "speech_status"
+    ] = input.track_speech_status()
+
+    current_tracking.loc[
+        match,
+        "hearing_status"
+    ] = input.track_hearing_status()
+
+    current_tracking.loc[
+        match,
+        "psychosocial_status"
+    ] = input.track_psychosocial_status()
+
+    current_tracking.loc[
+        match,
+        "notes"
+    ] = input.track_notes()
+
+
+    tracking_records.set(
+        current_tracking
+    )
+
+
+    # ------------------------------------------------------------
+    # MOVE PATIENT INTO TRACK STAGE
+    # ------------------------------------------------------------
+
+    current_patients = (
+        patients().copy()
+    )
+
+    patient_match = (
+        current_patients["patient_id"]
+        == patient_id
+    )
+
+    current_patients.loc[
+        patient_match,
+        "current_step"
+    ] = "TRACK - Follow-up"
+
+    patients.set(
+        current_patients
+    )
+
+
+# ============================================================================
+# TRACKING REGISTRY SEARCH
+# ============================================================================
+
+@reactive.calc
+def track_registry():
+
+    df = tracking_records().copy()
+
+    query = (
+        input.track_search()
+        .strip()
+        .lower()
+    )
+
+    if query:
+
+        searchable = (
+            df["patient_id"]
+            .fillna("")
+            .astype(str)
+
+            + " "
+
+            + df["followup_status"]
+            .fillna("")
+            .astype(str)
+
+            + " "
+
+            + df["feeding_status"]
+            .fillna("")
+            .astype(str)
+
+            + " "
+
+            + df["nutrition_status"]
+            .fillna("")
+            .astype(str)
+        ).str.lower()
+
+        df = df[
+            searchable.str.contains(
+                query,
+                regex=False,
+                na=False,
+            )
+        ]
+
+    return df
+
 
 # ============================================================================
 # PAGE SETTINGS
@@ -780,10 +1212,6 @@ def register_patient():
 
 ui.page_opts(
     title="Cleft Care Pathway — Ghana",
-
-    # IMPORTANT:
-    # Normal page scrolling is used instead of forcing all
-    # cards into the browser viewport.
     fillable=False,
 )
 
@@ -824,8 +1252,7 @@ with ui.navset_bar(
                     "Region",
                     choices=[
                         "All"
-                    ]
-                    + sorted(REGIONS),
+                    ] + sorted(REGIONS),
                 )
 
                 ui.input_select(
@@ -833,8 +1260,7 @@ with ui.navset_bar(
                     "Pathway Step",
                     choices=[
                         "All"
-                    ]
-                    + sorted(PATHWAY_STEPS),
+                    ] + sorted(PATHWAY_STEPS),
                 )
 
                 ui.input_select(
@@ -1120,30 +1546,24 @@ with ui.navset_bar(
                     "Pathway Flow: Current vs. Integrated Care Model"
                 )
 
-                @render.ui
-                def pathway_comparison():
+                ui.div(
 
-                    return ui.div(
+                    ui.p(
+                        "FIND  →  CONNECT  →  "
+                        "NAVIGATE  →  TREAT  →  TRACK",
+                        class_="pathway-flow",
+                    ),
 
-                        ui.div(
+                    ui.p(
+                        "Community detection • "
+                        "referral • logistics • "
+                        "multidisciplinary care • "
+                        "follow-up",
+                        class_="help-text",
+                    ),
 
-                            ui.p(
-                                "FIND  →  CONNECT  →  "
-                                "NAVIGATE  →  TREAT  →  TRACK",
-                                class_="pathway-flow",
-                            ),
-
-                            ui.p(
-                                "Community detection • "
-                                "referral • logistics • "
-                                "multidisciplinary care • "
-                                "follow-up",
-                                class_="help-text",
-                            ),
-
-                            class_="pathway-box",
-                        )
-                    )
+                    class_="pathway-box",
+                )
 
 
     # ========================================================================
@@ -1363,31 +1783,25 @@ with ui.navset_bar(
                 ),
             )
 
-            @render.ui
-            def referral_flow_diagram():
+            ui.div(
 
-                return ui.div(
+                ui.p(
+                    "FIND  →  CONNECT  →  "
+                    "NAVIGATE  →  TREAT  →  TRACK",
+                    class_="pathway-flow",
+                ),
 
-                    ui.div(
+                ui.p(
+                    "High-risk cases can be "
+                    "prioritised for referral "
+                    "and care coordination "
+                    "according to the programme "
+                    "protocol.",
+                    class_="help-text",
+                ),
 
-                        ui.p(
-                            "FIND  →  CONNECT  →  "
-                            "NAVIGATE  →  TREAT  →  TRACK",
-                            class_="pathway-flow",
-                        ),
-
-                        ui.p(
-                            "High-risk cases can be "
-                            "prioritised for referral "
-                            "and care coordination "
-                            "according to the programme "
-                            "protocol.",
-                            class_="help-text",
-                        ),
-
-                        class_="pathway-box",
-                    )
-                )
+                class_="pathway-box",
+            )
 
 
         # --------------------------------------------------------------------
@@ -1500,7 +1914,6 @@ with ui.navset_bar(
                     min=0,
                 )
 
-
                 @render.text
                 def weight_progress():
 
@@ -1605,9 +2018,9 @@ with ui.navset_bar(
             )
 
 
-            # ---------------------------------------------------------------
+            # ----------------------------------------------------------------
             # PATIENT SELECTION
-            # ---------------------------------------------------------------
+            # ----------------------------------------------------------------
 
             ui.input_select(
                 "mdt_patient",
@@ -1620,9 +2033,9 @@ with ui.navset_bar(
             )
 
 
-            # ---------------------------------------------------------------
+            # ----------------------------------------------------------------
             # MDT CHECKLISTS
-            # ---------------------------------------------------------------
+            # ----------------------------------------------------------------
 
             with ui.layout_columns(
                 col_widths=[6, 6],
@@ -1630,9 +2043,9 @@ with ui.navset_bar(
                 fill=False,
             ):
 
-                # -----------------------------------------------------------
+                # ------------------------------------------------------------
                 # CARE TEAM
-                # -----------------------------------------------------------
+                # ------------------------------------------------------------
 
                 with ui.card(
                     class_="content-card"
@@ -1666,9 +2079,9 @@ with ui.navset_bar(
                     )
 
 
-                # -----------------------------------------------------------
+                # ------------------------------------------------------------
                 # ADDITIONAL MDT
-                # -----------------------------------------------------------
+                # ------------------------------------------------------------
 
                 with ui.card(
                     class_="content-card"
@@ -1697,3 +2110,571 @@ with ui.navset_bar(
                         "followup_check",
                         "Follow-up Plan Documented",
                     )
+
+
+    # ========================================================================
+    # TRACK - FOLLOW-UP
+    # ========================================================================
+
+    with ui.nav_panel(
+        "TRACK - Follow-up"
+    ):
+
+        ui.h2(
+            "STEP 5: TRACK - Follow-up & Long-term Outcomes",
+            class_="section-title",
+            style=(
+                f"color: {HEALTHCARE_BLUE};"
+            ),
+        )
+
+        ui.p(
+            "Maintain continuity of care after referral "
+            "and treatment by monitoring follow-up visits, "
+            "nutrition, feeding, speech, hearing, "
+            "psychosocial support, and outstanding needs.",
+            class_="help-text",
+        )
+
+
+        # --------------------------------------------------------------------
+        # TRACKING KPI CARDS
+        # --------------------------------------------------------------------
+
+        with ui.layout_columns(
+            col_widths=[3, 3, 3, 3],
+            gap="1rem",
+            fill=False,
+        ):
+
+            # ----------------------------------------------------------------
+            # COMPLETED FOLLOW-UPS
+            # ----------------------------------------------------------------
+
+            with ui.card(
+                class_="kpi-card"
+            ):
+
+                ui.card_header(
+                    "Follow-ups Completed",
+                    style=(
+                        f"background-color: "
+                        f"{WARM_TEAL}; "
+                        f"color: white;"
+                    ),
+                )
+
+                @render.text
+                def track_completed():
+
+                    df = tracking_records()
+
+                    completed = (
+                        df["followup_status"]
+                        == "Completed"
+                    ).sum()
+
+                    return f"{completed:,}"
+
+
+            # ----------------------------------------------------------------
+            # SCHEDULED
+            # ----------------------------------------------------------------
+
+            with ui.card(
+                class_="kpi-card"
+            ):
+
+                ui.card_header(
+                    "Scheduled",
+                    style=(
+                        f"background-color: "
+                        f"{HEALTHCARE_BLUE}; "
+                        f"color: white;"
+                    ),
+                )
+
+                @render.text
+                def track_scheduled():
+
+                    df = tracking_records()
+
+                    scheduled = (
+                        df["followup_status"]
+                        == "Scheduled"
+                    ).sum()
+
+                    return f"{scheduled:,}"
+
+
+            # ----------------------------------------------------------------
+            # NEEDS FOLLOW-UP
+            # ----------------------------------------------------------------
+
+            with ui.card(
+                class_="kpi-card"
+            ):
+
+                ui.card_header(
+                    "Needs Follow-up",
+                    style=(
+                        f"background-color: "
+                        f"{AMBER_GOLD}; "
+                        f"color: white;"
+                    ),
+                )
+
+                @render.text
+                def track_needs_followup():
+
+                    df = tracking_records()
+
+                    needs = (
+                        df["followup_status"]
+                        == "Needs follow-up"
+                    ).sum()
+
+                    return f"{needs:,}"
+
+
+            # ----------------------------------------------------------------
+            # PATIENTS IN TRACK
+            # ----------------------------------------------------------------
+
+            with ui.card(
+                class_="kpi-card"
+            ):
+
+                ui.card_header(
+                    "Patients in TRACK",
+                    style=(
+                        f"background-color: "
+                        f"{WARM_TEAL}; "
+                        f"color: white;"
+                    ),
+                )
+
+                @render.text
+                def track_total():
+
+                    df = patients()
+
+                    total = (
+                        df["current_step"]
+                        == "TRACK - Follow-up"
+                    ).sum()
+
+                    return f"{total:,}"
+
+
+        # --------------------------------------------------------------------
+        # FOLLOW-UP FORM + PATIENT SUMMARY
+        # --------------------------------------------------------------------
+
+        with ui.layout_columns(
+            col_widths=[5, 7],
+            gap="1.25rem",
+            fill=False,
+        ):
+
+            # ----------------------------------------------------------------
+            # FOLLOW-UP RECORD FORM
+            # ----------------------------------------------------------------
+
+            with ui.card(
+                class_="tall-card",
+            ):
+
+                ui.card_header(
+                    "Follow-up Record",
+                    style=(
+                        f"background-color: "
+                        f"{WARM_TEAL}; "
+                        f"color: white;"
+                    ),
+                )
+
+                ui.p(
+                    "Select a patient and record the latest "
+                    "follow-up status and continuing care needs.",
+                    class_="help-text",
+                )
+
+                ui.input_select(
+                    "track_patient",
+                    "Select Patient",
+                    choices=(
+                        initial_patients[
+                            "patient_id"
+                        ].tolist()
+                    ),
+                )
+
+                ui.input_select(
+                    "track_status",
+                    "Follow-up Status",
+                    choices=FOLLOWUP_STATUSES,
+                    selected="Scheduled",
+                )
+
+                ui.input_date(
+                    "track_followup_date",
+                    "Date of Follow-up",
+                    value=date.today(),
+                )
+
+                ui.input_date(
+                    "track_next_date",
+                    "Next Follow-up Date",
+                    value=(
+                        date.today()
+                        + timedelta(days=30)
+                    ),
+                )
+
+                ui.input_select(
+                    "track_feeding_status",
+                    "Feeding Progress",
+                    choices=FEEDING_STATUSES,
+                )
+
+                ui.input_select(
+                    "track_nutrition_status",
+                    "Nutrition Status",
+                    choices=NUTRITION_STATUSES,
+                )
+
+                ui.input_select(
+                    "track_speech_status",
+                    "Speech Review",
+                    choices=SPEECH_STATUSES,
+                )
+
+                ui.input_select(
+                    "track_hearing_status",
+                    "Hearing Review",
+                    choices=HEARING_STATUSES,
+                )
+
+                ui.input_select(
+                    "track_psychosocial_status",
+                    "Psychosocial Support",
+                    choices=PSYCHOSOCIAL_STATUSES,
+                )
+
+                ui.input_text_area(
+                    "track_notes",
+                    "Follow-up Notes",
+                    placeholder=(
+                        "Document progress, barriers, "
+                        "referrals, or outstanding needs."
+                    ),
+                    rows=4,
+                )
+
+                ui.div(
+
+                    ui.input_action_button(
+                        "save_tracking",
+                        "Save Follow-up Record",
+                        class_="btn-primary",
+                    ),
+
+                    class_="form-actions",
+                )
+
+
+            # ----------------------------------------------------------------
+            # PATIENT FOLLOW-UP SUMMARY
+            # ----------------------------------------------------------------
+
+            with ui.card(
+                class_="tall-card",
+            ):
+
+                ui.card_header(
+                    "Patient Follow-up Summary"
+                )
+
+                @render.ui
+                def track_patient_summary():
+
+                    selected_id = (
+                        input.track_patient()
+                    )
+
+                    if not selected_id:
+
+                        return ui.p(
+                            "Select a patient to view "
+                            "their current pathway information.",
+                            class_="help-text",
+                        )
+
+                    patient_df = patients()
+
+                    selected = patient_df[
+                        patient_df["patient_id"]
+                        == selected_id
+                    ]
+
+                    if selected.empty:
+
+                        return ui.p(
+                            "Patient not found.",
+                            class_="help-text",
+                        )
+
+                    patient = selected.iloc[0]
+
+                    track_df = tracking_records()
+
+                    tracking_match = track_df[
+                        track_df["patient_id"]
+                        == selected_id
+                    ]
+
+                    if tracking_match.empty:
+
+                        return ui.p(
+                            "No follow-up record available.",
+                            class_="help-text",
+                        )
+
+                    tracking = (
+                        tracking_match.iloc[0]
+                    )
+
+                    return ui.div(
+
+                        ui.div(
+
+                            ui.h4(
+                                str(patient["name"]),
+                                class_="track-summary-title",
+                            ),
+
+                            ui.p(
+                                f"Patient ID: "
+                                f"{patient['patient_id']}"
+                            ),
+
+                            ui.p(
+                                f"Region: "
+                                f"{patient['region']} | "
+                                f"District: "
+                                f"{patient['district']}"
+                            ),
+
+                            ui.p(
+                                f"Cleft type: "
+                                f"{patient['cleft_type']}"
+                            ),
+
+                            ui.p(
+                                f"Current pathway step: "
+                                f"{patient['current_step']}"
+                            ),
+
+                            ui.p(
+                                f"Priority: "
+                                f"{patient['priority']}"
+                            ),
+
+                            class_="track-summary",
+                        ),
+
+                        ui.div(
+
+                            ui.h4(
+                                "Follow-up Status",
+                                class_="track-summary-title",
+                            ),
+
+                            ui.p(
+                                str(
+                                    tracking[
+                                        "followup_status"
+                                    ]
+                                ),
+                                class_="status-pill",
+                            ),
+
+                            ui.p(
+                                f"Last follow-up: "
+                                f"{tracking['last_followup'] or 'Not recorded'}"
+                            ),
+
+                            ui.p(
+                                f"Next follow-up: "
+                                f"{tracking['next_followup'] or 'Not scheduled'}"
+                            ),
+
+                            ui.p(
+                                f"Feeding: "
+                                f"{tracking['feeding_status']}"
+                            ),
+
+                            ui.p(
+                                f"Nutrition: "
+                                f"{tracking['nutrition_status']}"
+                            ),
+
+                            ui.p(
+                                f"Speech: "
+                                f"{tracking['speech_status']}"
+                            ),
+
+                            ui.p(
+                                f"Hearing: "
+                                f"{tracking['hearing_status']}"
+                            ),
+
+                            ui.p(
+                                f"Psychosocial: "
+                                f"{tracking['psychosocial_status']}"
+                            ),
+
+                            class_="track-summary",
+                        ),
+                    )
+
+
+        # --------------------------------------------------------------------
+        # FOLLOW-UP CHART + REGISTRY
+        # --------------------------------------------------------------------
+
+        with ui.layout_columns(
+            col_widths=[5, 7],
+            gap="1.25rem",
+            fill=False,
+        ):
+
+            # ----------------------------------------------------------------
+            # FOLLOW-UP STATUS CHART
+            # ----------------------------------------------------------------
+
+            with ui.card(
+                class_="dashboard-chart-card",
+                full_screen=True,
+            ):
+
+                ui.card_header(
+                    "Follow-up Status Distribution"
+                )
+
+                @render.plot(height=300)
+                def followup_status_chart():
+
+                    counts = (
+                        tracking_records()[
+                            "followup_status"
+                        ]
+                        .value_counts()
+                    )
+
+                    fig, ax = plt.subplots(
+                        figsize=(7, 4)
+                    )
+
+                    counts.plot.bar(
+                        ax=ax
+                    )
+
+                    ax.set_ylabel(
+                        "Number of patients"
+                    )
+
+                    ax.set_xlabel("")
+
+                    ax.tick_params(
+                        axis="x",
+                        rotation=20,
+                    )
+
+                    ax.set_title(
+                        "Follow-up Status",
+                        fontsize=13,
+                        fontweight="bold",
+                    )
+
+                    fig.tight_layout()
+
+                    return fig
+
+
+            # ----------------------------------------------------------------
+            # FOLLOW-UP REGISTRY
+            # ----------------------------------------------------------------
+
+            with ui.card(
+                height="500px",
+                full_screen=True,
+            ):
+
+                ui.card_header(
+                    "Follow-up Registry"
+                )
+
+                ui.input_text(
+                    "track_search",
+                    "Search Follow-up Registry",
+                    placeholder=(
+                        "Search by patient ID, status, "
+                        "feeding, or nutrition"
+                    ),
+                )
+
+                @render.data_frame
+                def followup_registry_table():
+
+                    columns = [
+                        "patient_id",
+                        "followup_status",
+                        "last_followup",
+                        "next_followup",
+                        "feeding_status",
+                        "nutrition_status",
+                        "speech_status",
+                        "hearing_status",
+                        "psychosocial_status",
+                    ]
+
+                    return render.DataGrid(
+                        track_registry()[columns],
+                        filters=True,
+                        height="330px",
+                    )
+
+
+        # --------------------------------------------------------------------
+        # TRACKING PATHWAY
+        # --------------------------------------------------------------------
+
+        with ui.card(
+            fill=False,
+        ):
+
+            ui.card_header(
+                "TRACK: Continuity of Care"
+            )
+
+            ui.div(
+
+                ui.p(
+                    "TREAT  →  TRACK  →  REVIEW  →  "
+                    "REFER / SUPPORT  →  CONTINUE CARE",
+                    class_="pathway-flow",
+                ),
+
+                ui.p(
+                    "The TRACK stage keeps the child connected "
+                    "to follow-up after treatment and provides "
+                    "a structured place to identify ongoing "
+                    "nutrition, feeding, speech, hearing, "
+                    "and psychosocial needs.",
+                    class_="help-text",
+                ),
+
+                class_="pathway-box",
+            )
